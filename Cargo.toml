@@ -10,3 +10,4 @@ crate-type = ["cdylib"]
 
 [dependencies]
 nvim-oxi = { version = "0.3.0", features = ["neovim-0-9"] }
+rodio = "0.17.1"
