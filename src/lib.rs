@@ -4,7 +4,7 @@ use rodio::{
     OutputStreamHandle,
     Sink
 };
-use nvim_oxi::{self as oxi, Dictionary, Function};
+use nvim_oxi::{self as oxi, api::Buffer, Object, Dictionary, Function};
 use std::{
     time::Duration,
     cell::RefCell,
@@ -14,14 +14,14 @@ use std::{
 struct Config {
     stream: OutputStream,
     stream_handle: OutputStreamHandle,
-    freq: f32
+    freq: f32,
 }
 
 thread_local!{
     static CONFIG: RefCell<Config> = RefCell::new(Config{
         stream: OutputStream::try_default().unwrap().0,
         stream_handle: OutputStream::try_default().unwrap().1,
-        freq : 0.0
+        freq : 0.0,
     });
 }
 
@@ -35,11 +35,12 @@ fn setup(freq: f32) -> oxi::Result<Dictionary>  {
     });
 
     Ok(Dictionary::from_iter([
-        ("beep", Function::from_fn(|t: f32| {Ok::<_, Infallible>(beep(t))})),
+        ("beep", Object::from(Function::from_fn(beep))),
+        ("convert", Object::from(Function::from_fn(convert))),
     ]))
 }
 
-fn beep(time: f32){
+fn beep(time: f32) -> Result<(),Infallible> {
     CONFIG.with(|conf| {
         let conf = conf.borrow();
         let sink = Sink::try_new(&conf.stream_handle).unwrap();
@@ -47,6 +48,45 @@ fn beep(time: f32){
         sink.append(sine);
         sink.sleep_until_end();
     });
+    Ok(())
+}
+
+fn convert(buf: Buffer) -> Result<(),Infallible> {
+    let mut text: String = buf.get_lines(.., false).unwrap().fold(String::new(), |a,s| {a + &s.to_string_lossy() + "\n"});
+    text.pop();
+    let text = text.chars().map(|c| { match c {
+        'a' | 'A' => ".- ",
+        'b' | 'B' => "-... ",
+        'c' | 'C' => "-.-. ",
+        'd' | 'D' => "-.. ",
+        'e' | 'E' => ". ",
+        'f' | 'F' => "..-. ",
+        'g' | 'G' => "--. ",
+        'h' | 'H' => ".... ",
+        'i' | 'I' => ".. ",
+        'j' | 'J' => ".--- ",
+        'k' | 'K' => "-.- ",
+        'l' | 'L' => ".-.. ",
+        'm' | 'M' => "-- ",
+        'n' | 'N' => "-. ",
+        'o' | 'O' => "--- ",
+        'p' | 'P' => ".--. ",
+        'q' | 'Q' => "--.- ",
+        'r' | 'R' => ".-. ",
+        's' | 'S' => "... ",
+        't' | 'T' => "- ",
+        'u' | 'U' => "..- ",
+        'v' | 'V' => "...- ",
+        'w' | 'W' => ".-- ",
+        'x' | 'X' => "-..- ",
+        'y' | 'Y' => "-.-- ",
+        'z' | 'Z' => "--.. ",
+        ' '       => "/ ",
+        '\n'      => "-...- ",
+        _         => ""
+    }}).fold(String::new(), |a,s| {a + s });
+    oxi::print!("{text}");
+    Ok(())
 }
 
 #[oxi::module]
