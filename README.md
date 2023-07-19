@@ -8,4 +8,8 @@ Written in Rust for a presentation at a [TupperVim]{https://tuppervim.org/} meet
 
 [x] convert buffer to morse
 [ ] beep morse
-[ ] 
+
+For the future:
+[ ] music.nvim : 
+    [ ] parse and play midi
+    [ ] parse and play IBM BASIC Play Strings
