@@ -7,6 +7,7 @@ use rodio::{
 use nvim_oxi::{self as oxi, api::Buffer, Object, Dictionary, Function};
 use std::{
     time::Duration,
+    thread::sleep,
     cell::RefCell,
     convert::Infallible
 };
@@ -85,7 +86,17 @@ fn convert(buf: Buffer) -> Result<(),Infallible> {
         '\n'      => "-...- ",
         _         => ""
     }}).fold(String::new(), |a,s| {a + s });
-    oxi::print!("{text}");
+    for s in text.chars() {
+        let unit = 0.1;
+        match s {
+            '.' => {beep(unit).unwrap(); sleep(Duration::from_secs_f32(unit));},
+            '-' => {beep(unit*3.0).unwrap(); sleep(Duration::from_secs_f32(unit));},
+            '/' => {sleep(Duration::from_secs_f32(unit*2.0));},
+            ' ' => {sleep(Duration::from_secs_f32(unit));},
+            _   => {},
+        }
+    }
+    // oxi::print!("{text}");
     Ok(())
 }
 
