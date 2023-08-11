@@ -7,7 +7,7 @@ Written in Rust for a presentation at a [TupperVim](https://tuppervim.org/) meet
 ## TODO:
 
 - [x] convert buffer to morse
-- [ ] beep morse
+- [x] beep morse
 
 For the future:
 - [ ] music.nvim : 
