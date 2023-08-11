@@ -79,7 +79,6 @@ fn convert(buf: Buffer, conf: Config) -> Result<(),Infallible> {
             _   => {},
         }
     }
-    // oxi::print!("{text}");
     Ok(())
 }
 
