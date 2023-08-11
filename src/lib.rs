@@ -1,58 +1,41 @@
 use rodio::{
     source::{SineWave, Source},
     OutputStream,
-    OutputStreamHandle,
     Sink
 };
 use nvim_oxi::{self as oxi, api::Buffer, Object, Dictionary, Function};
 use std::{
     time::Duration,
     thread::sleep,
-    cell::RefCell,
     convert::Infallible
 };
 
+#[derive(Clone, Copy)]
 struct Config {
-    stream: OutputStream,
-    stream_handle: OutputStreamHandle,
     freq: f32,
 }
 
-thread_local!{
-    static CONFIG: RefCell<Config> = RefCell::new(Config{
-        stream: OutputStream::try_default().unwrap().0,
-        stream_handle: OutputStream::try_default().unwrap().1,
-        freq : 0.0,
-    });
-}
-
 fn setup(freq: f32) -> oxi::Result<Dictionary>  {
-    CONFIG.with(|conf| {
-        let mut conf = conf.borrow_mut();
-        let (stream, stream_handle) = OutputStream::try_default().unwrap();
-        conf.stream = stream;
-        conf.stream_handle = stream_handle;
-        conf.freq = freq;
-    });
+    let conf = Config{
+        freq,
+    };
 
     Ok(Dictionary::from_iter([
-        ("beep", Object::from(Function::from_fn(beep))),
-        ("convert", Object::from(Function::from_fn(convert))),
+        ("beep", Object::from(Function::from_fn(move |t| {beep(t,conf)}))),
+        ("convert", Object::from(Function::from_fn(move |b| {convert(b,conf)}))),
     ]))
 }
 
-fn beep(time: f32) -> Result<(),Infallible> {
-    CONFIG.with(|conf| {
-        let conf = conf.borrow();
-        let sink = Sink::try_new(&conf.stream_handle).unwrap();
-        let sine = SineWave::new(conf.freq).take_duration(Duration::from_secs_f32(time));
-        sink.append(sine);
-        sink.sleep_until_end();
-    });
+fn beep(time: f32, conf: Config) -> Result<(),Infallible> {
+    let (_stream, stream_handle) = OutputStream::try_default().unwrap();
+    let sink = Sink::try_new(&stream_handle).unwrap();
+    let sine = SineWave::new(conf.freq).take_duration(Duration::from_secs_f32(time));
+    sink.append(sine);
+    sink.sleep_until_end();
     Ok(())
 }
 
-fn convert(buf: Buffer) -> Result<(),Infallible> {
+fn convert(buf: Buffer, conf: Config) -> Result<(),Infallible> {
     let mut text: String = buf.get_lines(.., false).unwrap().fold(String::new(), |a,s| {a + &s.to_string_lossy() + "\n"});
     text.pop();
     let text = text.chars().map(|c| { match c {
@@ -89,8 +72,8 @@ fn convert(buf: Buffer) -> Result<(),Infallible> {
     for s in text.chars() {
         let unit = 0.1;
         match s {
-            '.' => {beep(unit).unwrap(); sleep(Duration::from_secs_f32(unit));},
-            '-' => {beep(unit*3.0).unwrap(); sleep(Duration::from_secs_f32(unit));},
+            '.' => {beep(unit, conf).unwrap(); sleep(Duration::from_secs_f32(unit));},
+            '-' => {beep(unit*3.0, conf).unwrap(); sleep(Duration::from_secs_f32(unit));},
             '/' => {sleep(Duration::from_secs_f32(unit*2.0));},
             ' ' => {sleep(Duration::from_secs_f32(unit));},
             _   => {},
