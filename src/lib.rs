@@ -70,7 +70,7 @@ fn convert(buf: Buffer, conf: Config) -> Result<(),Infallible> {
         _         => ""
     }}).fold(String::new(), |a,s| {a + s });
     for s in text.chars() {
-        let unit = 0.1;
+        let unit = 0.15;
         match s {
             '.' => {beep(unit, conf).unwrap(); sleep(Duration::from_secs_f32(unit));},
             '-' => {beep(unit*3.0, conf).unwrap(); sleep(Duration::from_secs_f32(unit));},
